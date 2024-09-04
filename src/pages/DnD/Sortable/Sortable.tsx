@@ -25,6 +25,7 @@ import DroppableContainer from "./DroppableContainer";
 import SortableItem from "./SortableItem";
 import MyDrag from "../MyDrag";
 import OverLayItem from "./OverLayItem";
+import { createPortal } from "react-dom";
 
 const iconsData = [
   { id: 1, icon: "chrome", color: "#4285F4" },
@@ -34,13 +35,13 @@ const iconsData = [
 ];
 
 const defaultAnnouncements = {
-  onDragStart(id:any) {
+  onDragStart(id: any) {
     console.log(`Picked up draggable item ${id}.`);
   },
   onDragOver(id, overId) {
     if (overId) {
       console.log(
-        `Draggable item ${id} was moved over droppable area ${overId}.`
+        `Draggable item ${id} was moved over droppable area ${overId}.`,
       );
       return;
     }
@@ -50,7 +51,7 @@ const defaultAnnouncements = {
   onDragEnd(id, overId) {
     if (overId) {
       console.log(
-        `Draggable item ${id} was dropped over droppable area ${overId}`
+        `Draggable item ${id} was dropped over droppable area ${overId}`,
       );
       return;
     }
@@ -59,16 +60,14 @@ const defaultAnnouncements = {
   },
   onDragCancel(id) {
     console.log(`Dragging was cancelled. Draggable item ${id} was dropped.`);
-  }
+  },
 };
-
-
 
 const Sortable = () => {
   const [items, setItems] = useState({
     container1: ["1", "2", "3"],
-    container2: ["4", "5", "6"]
-  })
+    container2: ["4", "5", "6"],
+  });
 
   const [activeId, setActiveId] = useState();
   const [overId, setOverId] = useState();
@@ -81,7 +80,6 @@ const Sortable = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
-
 
   const handleDragEndIcon = (event: any) => {
     const { active, over } = event;
@@ -97,30 +95,29 @@ const Sortable = () => {
     }
   };
 
-  function findContainer(id:any) {
-      // Check if the id directly matches a container (key in the 'items' object)
-    if( id in items){
+  function findContainer(id: any) {
+    // Check if the id directly matches a container (key in the 'items' object)
+    if (id in items) {
       return id;
     }
-      // If id is not a container, search through the containers to see if any contain this item
+    // If id is not a container, search through the containers to see if any contain this item
     return Object.keys(items).find((key) => items[key].includes(id));
   }
 
-  function handleDragStart(event:any){
-    const { active} = event
-    setActiveId(active.id)
+  function handleDragStart(event: any) {
+    const { active } = event;
+    setActiveId(active.id);
   }
 
-
-  function handleDragOver(event:any){
+  function handleDragOver(event: any) {
     const { active, over, draggingRect } = event;
     console.log(event);
-    setOverId(over.id)
-    
+    setOverId(over.id);
+
     const { id } = active;
-    const { id: overId } = over
-   
-     // Find the containers
+    const { id: overId } = over;
+
+    // Find the containers
     const activeContainer = findContainer(id);
     const overContainer = findContainer(overId);
 
@@ -132,57 +129,47 @@ const Sortable = () => {
       return;
     }
 
-    setItems((prev:any) => {
-
+    setItems((prev: any) => {
       const activeItems = prev[activeContainer];
       const overItems = prev[overContainer];
 
-       // Find the indexes for the items
-       const activeIndex = activeItems.indexOf(id);
-       const overIndex = overItems.indexOf(overId);
+      // Find the indexes for the items
+      const activeIndex = activeItems.indexOf(id);
+      const overIndex = overItems.indexOf(overId);
 
-       let newIndex;
+      let newIndex;
 
-       if(overId in prev){
+      if (overId in prev) {
         // We're at the root droppable of a container
-        newIndex = overItems.lenght +1;
-       }
-       else{
+        newIndex = overItems.lenght + 1;
+      } else {
         //If the dragged item is below the last item, it is inserted after the last item.
-         const isBelowLastItem =
-           over && 
-           overIndex === overItems.length - 1 //&& 
-           //draggingRect.offsetTop > over.react.offsetTop + over.rect.height;
-           
-           const modifier = isBelowLastItem ? 1 : 0;
-           //If the dragged item is not below the last item, it is inserted at the position of the item it's hovering over.
-           newIndex = overIndex >=0 ? overIndex + modifier : overItems.length + 1;
-          //  console.log("Over:", over);
-          //  console.log("Over React:", over.react);
-          //  console.log("Over Rect:", over.rect.offsetTop);
-          //  console.log("Dragging Rect:", draggingRect);
-           
-       }
+        const isBelowLastItem = over && overIndex === overItems.length - 1; //&&
+        //draggingRect.offsetTop > over.react.offsetTop + over.rect.height;
 
-       return {
+        const modifier = isBelowLastItem ? 1 : 0;
+        //If the dragged item is not below the last item, it is inserted at the position of the item it's hovering over.
+        newIndex = overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
+        //  console.log("Over:", over);
+        //  console.log("Over React:", over.react);
+        //  console.log("Over Rect:", over.rect.offsetTop);
+        //  console.log("Dragging Rect:", draggingRect);
+      }
+
+      return {
         ...prev,
         [activeContainer]: [
-          ...prev[activeContainer].filter((item) =>item !== active.id)
+          ...prev[activeContainer].filter((item) => item !== active.id),
         ],
 
         [overContainer]: [
-          ...prev[overContainer].slice(0,newIndex),
+          ...prev[overContainer].slice(0, newIndex),
           items[activeContainer][activeIndex],
-          ...prev[overContainer].slice(newIndex, prev[overContainer].length)
-
-
-        ]
-       }
-
-    })
-
+          ...prev[overContainer].slice(newIndex, prev[overContainer].length),
+        ],
+      };
+    });
   }
-
 
   function handleDragEnd(event) {
     const { active, over } = event;
@@ -203,17 +190,17 @@ const Sortable = () => {
     const activeIndex = items[activeContainer].indexOf(active.id);
     const overIndex = items[overContainer].indexOf(overId);
 
-    if(activeIndex !== overIndex){
+    if (activeIndex !== overIndex) {
       setItems((items) => ({
         ...items,
-        [overContainer]: arrayMove(items[overContainer],activeIndex,overIndex)
-      }))
+        [overContainer]: arrayMove(
+          items[overContainer],
+          activeIndex,
+          overIndex,
+        ),
+      }));
     }
-
   }
-
-
-  
 
   return (
     <>
@@ -226,26 +213,16 @@ const Sortable = () => {
         onDragOver={handleDragOver}
       >
         <div className="flex flex-col md:flex-row ">
-         <DroppableContainer
-         id="container1"
-         items={items.container1}
-         />
-         <DroppableContainer
-         id="container2"
-         items={items.container2}
-         />
-                  <DragOverlay>
-                    {activeId ? <MyDrag id={activeId} /> : null}
-                 
-                  </DragOverlay>
-         
+          <DroppableContainer id="container1" items={items.container1} />
+          <DroppableContainer id="container2" items={items.container2} />
+          <DragOverlay>
+            {activeId ? <MyDrag id={activeId} /> : null}
+          </DragOverlay>
         </div>
+        
       </DndContext>
 
-
-
-
-      <h2 className="mx-7 pb-3 text-xl font-bold mt-16 ">
+      <h2 className="mx-7 mt-16 pb-3 text-xl font-bold ">
         {" "}
         Horizontal drag drop like in window bar
       </h2>
@@ -273,5 +250,3 @@ const Sortable = () => {
 };
 
 export default Sortable;
-
-
