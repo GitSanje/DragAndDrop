@@ -3,11 +3,12 @@ import React, { useMemo, useState } from "react";
 import type { Column, Id } from "types/types";
 import { v4 as uuid } from "uuid";
 import ColumnContainer from "./ColumnContainer";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, KeyboardSensor, MouseSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import {
     arrayMove,
   horizontalListSortingStrategy,
   SortableContext,
+  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
 
@@ -19,7 +20,22 @@ const KanBanBoard = () => {
   const [activeCol, setActiveCol] = useState<Column | null>(null);
 
  
-  console.log(activeCol);
+//https://github.com/clauderic/dnd-kit/issues/800
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+        onActivation: (event) => console.log("onActivation", event), // Here!
+        activationConstraint: { distance: 5 },// Requires 5px of movement to start drag
+    }),
+    // useSensor(PointerSensor, {
+
+    //     activationConstraint: {
+    //       distance: 5
+    //     }
+    //   }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
   
   const createNewColumn = () => {
     const columnToAdd: Column = {
@@ -33,9 +49,23 @@ const KanBanBoard = () => {
   const deleteColumn = (id: Id) => {
 
     setColumns((prev) => prev.filter((col) => col.id !== id));
-    console.log(id);
+  
     
   };
+
+  const updateColumn = (id: Id, title:string) => {
+    const newCols = columns.map((col) => {
+        if(col.id !== id) 
+            return col
+        return { ...col, title}
+       
+    })
+    setColumns(newCols)
+//     setColumns((prev) => 
+//        prev.map((col) => 
+//     col.id === id ? { ...col, title}: col)
+//   )
+  }
 
   const handleDragStart = (event: DragStartEvent) => {
     if (event.active.data.current?.type === "Column") {
@@ -67,12 +97,14 @@ const KanBanBoard = () => {
     overflow-y-hidden
     px-[40px]"
     >
-      <DndContext onDragStart={handleDragStart}>
+      <DndContext onDragStart={handleDragStart}
+      sensors={sensors}
+      onDragEnd={handleDragEnd}>
         <div className="m-auto flex gap-4">
           <div className="flex gap-4">
             <SortableContext
               items={columnsId}
-              id={columnsId}
+            //   id={columnsId}
               strategy={horizontalListSortingStrategy}
             >
               {columns.map((column) => (
@@ -81,6 +113,7 @@ const KanBanBoard = () => {
                     key={column.id}
                     column={column}
                     deleteColumn={deleteColumn}
+                    updateColumn={updateColumn}
                   />
                 </>
               ))}
@@ -116,7 +149,7 @@ const KanBanBoard = () => {
         {createPortal(
           <DragOverlay>
             {activeCol ? (
-              <ColumnContainer column={activeCol} deleteColumn={deleteColumn} />
+              <ColumnContainer column={activeCol} deleteColumn={deleteColumn} updateColumn={updateColumn} />
             ) : null}
           </DragOverlay>,
           document.body,

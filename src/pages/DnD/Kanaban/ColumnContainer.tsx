@@ -1,32 +1,45 @@
 import { useSortable } from "@dnd-kit/sortable";
-import React from "react";
+import React, { useState } from "react";
 import { Column, Id } from "types/types";
 import { CSS } from "@dnd-kit/utilities";
+import PlusIcon from "@/widgets/icons/PlusIcon";
 interface Pros {
   column: Column;
   deleteColumn: (id: Id) => void;
+  updateColumn: (id: Id, title: string) => void;
 }
 
 const ColumnContainer: React.FC<Pros> = (props) => {
-  const { column, deleteColumn } = props;
-  const { setNodeRef, attributes, listeners, transform, transition,
-    isDragging
-   } =
-    useSortable({
-      id: column.id,
-      data: {
-        type: "Column",
-        column,
-      },
-    });
+  const { column, deleteColumn,updateColumn } = props;
+  const [editMode, setEditMode] = useState(false);
 
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: column.id,
+    data: {
+      type: "Column",
+      column,
+      
+    },
+    disabled: editMode
+  });
+
+
+  
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
   };
 
-  if(isDragging){
-    return (<div
+  if (isDragging) {
+    return (
+      <div
         ref={setNodeRef}
         style={style}
         className="
@@ -38,17 +51,16 @@ const ColumnContainer: React.FC<Pros> = (props) => {
      
           flex-col
           gap-2
-          opacity-40
-          border-rose-500
           rounded-md
           border-2
           border-columnBackgroundColor
+          border-rose-500
           bg-columnBackgroundColor
+          opacity-40
           
       "
-      >
-        
-        </div>)
+      ></div>
+    );
   }
   return (
     <div
@@ -70,22 +82,55 @@ const ColumnContainer: React.FC<Pros> = (props) => {
         
     "
     >
-      {/* Column title */}
       <div
-        className="text-md 
-        flex h-[60px] 
-        cursor-grab gap-4 rounded-md rounded-b-none
-        border-4 border-columnBackgroundColor bg-mainBackgroundColor p-3 font-bold"
+     onClick={() => {
+            
+              setEditMode(true);
+            
+          }}
         {...listeners}
         {...attributes}
+       
+        className="text-md flex justify-between items-center h-[60px] cursor-grab  gap-4 rounded-md rounded-b-none border-4 border-columnBackgroundColor bg-mainBackgroundColor p-3 font-bold"
       >
-        <div className="">0</div>
-        <div className="flex flex-grow">{column.title}</div>
+        {/* Draggable Area */}
+        <div className="flex  gap-4">
+          <div className="">0</div>
+          {!editMode && (
+            <div
+              className="cursor-text"
+            //   onClick={() => setEditMode(true)} 
+            >
+              {column.title}
+            </div>
+          )}
+          {editMode && (
+            <input
+            className="bg-black 
+            focus:border-rose-500
+             border rounded outline-none px-2"
+              value={column.title}
+              onChange={(e) => updateColumn(column.id, e.target.value)}
+              autoFocus
+              onBlur={() => {
+                setEditMode(false);
+              }}
+              onKeyDown={(e) => {
+                if(e.key !== "Enter") return;
+                setEditMode(false)
+              }}
+            />
+          )}
+        </div>
+
+        {/* Delete Button */}
         <button
-          className="
-            stroke-gray-500
-            hover:stroke-white"
-          onClick={() => deleteColumn(column.id)}
+          onClick={() =>{
+             deleteColumn(column.id)
+            }}
+          className="stroke-gray-500 hover:stroke-white
+          px-1
+          py-2 rounded"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -107,7 +152,15 @@ const ColumnContainer: React.FC<Pros> = (props) => {
       <div className="flex flex-grow">content</div>
 
       {/* Column footer */}
-      <div>Footer</div>
+      <div className="
+      flex gap-2 items-center border-columnBackgroundColor
+      border-2 rounded-md p-4 border-x-columnBackgroundColor 
+      hover:bg-mainBackgroundColor hover:text-rose-500
+      ">
+        <PlusIcon/>
+        Add Task
+
+      </div>
     </div>
   );
 };
